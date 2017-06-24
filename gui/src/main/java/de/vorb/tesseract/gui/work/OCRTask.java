@@ -52,6 +52,7 @@ public class OCRTask implements Callable<Void> {
             boolean hasPreprocessorChanged, Path equivalencesFile,
             ProgressMonitor progressMonitor, AtomicInteger progress,
             Writer errorLog, AtomicInteger errors) {
+
         this.sourceFile = sourceFile;
         this.project = project;
         this.export = export;

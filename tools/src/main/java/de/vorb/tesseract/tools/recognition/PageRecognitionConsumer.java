@@ -77,7 +77,7 @@ public abstract class PageRecognitionConsumer extends
                 state.getWordFontAttributes()));
     }
 
-    @Override
+    /*@Override
     public void symbol() {
         final int level = tesseract.RIL_SYMBOL;
         wordSymbols.add(new Symbol(
@@ -85,5 +85,30 @@ public abstract class PageRecognitionConsumer extends
                 getState().getBoundingBox(level),
                 getState().getConfidence(level),
                 getState().getAlternatives()));
+        //federica
+        System.out.println();
+    }*/
+
+    //federica**********************************************************************************************************
+    //chiama questo metodo una volta per ogni simbolo che deve aggiungere e lo chiama da "recognize" nel RecognitionProducer
+    @Override
+    public void symbol() {
+        final int level = tesseract.RIL_SYMBOL;
+        Symbol symbol = new Symbol(
+                getState().getText(level),
+                getState().getBoundingBox(level),
+                getState().getConfidence(level),
+                getState().getAlternatives());
+        wordSymbols.add(symbol);
     }
+
+    public List<Symbol> getSymbol() {return wordSymbols;}
+
+    @Override
+    public String toString(){
+        String res="";
+        for(Symbol s: wordSymbols){res+= ", "+s.getText();}
+        return res;
+    }
+    //********************************************************************************************************************
 }

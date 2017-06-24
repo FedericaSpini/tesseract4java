@@ -16,6 +16,7 @@ public class PageListWorker extends SwingWorker<Void, PageThumbnail> {
 
     public PageListWorker(final ProjectModel projectModel,
             DefaultListModel<PageThumbnail> pages) {
+
         this.projectModel = projectModel;
         this.pages = pages;
 
@@ -26,6 +27,7 @@ public class PageListWorker extends SwingWorker<Void, PageThumbnail> {
     protected Void doInBackground() throws Exception {
         // no thumbnail
         final Optional<BufferedImage> thumbnail = Optional.empty();
+
 
         // publish a placeholder (no thumbnail) for every image file
         for (final Path file : projectModel.getImageFiles()) {

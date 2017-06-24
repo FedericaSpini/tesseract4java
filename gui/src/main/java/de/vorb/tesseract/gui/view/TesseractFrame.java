@@ -69,6 +69,10 @@ public class TesseractFrame extends JFrame {
     private final JSeparator separator_2;
     private final JMenuItem mnCloseProject;
     private final JMenuItem mnSaveBoxFile;
+    //federica//////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private final JMenuItem mnSaveBoxFileForTraining;
+
+
     private final JMenuItem mnImportTranscriptions;
 
     private final JMenu mnTools;
@@ -77,6 +81,8 @@ public class TesseractFrame extends JFrame {
 
     private final JMenuItem mnExit;
     private final JMenuItem mnTesseractTrainer;
+    //federica//////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private final JMenuItem mnAutomaticTrainer;
 
     private final Scale scale;
 
@@ -203,6 +209,14 @@ public class TesseractFrame extends JFrame {
                 TesseractFrame.class.getResource("/icons/table_save.png")));
         mnFile.add(mnSaveBoxFile);
 
+        //federica//////////////////////////////////////////////////////////////////////////////////////////////////////
+        mnSaveBoxFileForTraining = new JMenuItem("Save Box File For Training");
+        mnSaveBoxFileForTraining.setEnabled(false);
+        mnSaveBoxFileForTraining.setIcon(new ImageIcon(
+                TesseractFrame.class.getResource("/icons/table_save.png")));
+        mnFile.add(mnSaveBoxFileForTraining);
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         mnOpenProjectDirectory = new JMenuItem("Open Project Directory");
         mnOpenProjectDirectory.setEnabled(false);
         mnOpenProjectDirectory.setIcon(new ImageIcon(
@@ -259,6 +273,12 @@ public class TesseractFrame extends JFrame {
         mnTesseractTrainer.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
                 InputEvent.CTRL_MASK | InputEvent.SHIFT_MASK));
         mnTools.add(mnTesseractTrainer);
+
+        //federica//////////////////////////////////////////////////////////////////////////////////////////////////////
+        mnAutomaticTrainer = new JMenuItem("Automatic Training");
+        mnTools.add(mnAutomaticTrainer);
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
         final JMenu mnHelp = new JMenu(
                 Labels.getLabel(getLocale(), "menu_help"));
@@ -338,6 +358,11 @@ public class TesseractFrame extends JFrame {
         spMain.setLeftComponent(splitPane);
         splitPane.setLeftComponent(listPages);
         splitPane.setRightComponent(listTrainingFiles);
+        //federica
+        //System.out.println("La listTrainingFiles in TesseractFrame contiene:");
+        //for (String term : listTrainingFiles.getList().getSelectedValuesList()) {
+           // System.out.println( term);
+        //}
     }
 
     public MainComponent getActiveComponent() {
@@ -363,6 +388,11 @@ public class TesseractFrame extends JFrame {
     public JMenuItem getMenuItemSaveBoxFile() {
         return mnSaveBoxFile;
     }
+
+    //federica//////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public JMenuItem getMenuItemSaveBoxFileForTraining(){return mnSaveBoxFileForTraining;}
+    public JMenuItem getMenuItemAutomaticTrainer(){return mnAutomaticTrainer;}
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public JMenuItem getMenuItemCloseProject() {
         return mnCloseProject;

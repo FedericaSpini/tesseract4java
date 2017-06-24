@@ -11,10 +11,17 @@ public class SymbolTableModel extends FilteredTableModel<Symbol> {
         super(new FilteredListModel<>(new DefaultListModel<>()));
     }
 
+    //@Override
+    //public int getColumnCount() {
+    //    return 6;
+    //}
+
+    //federica/////////////////////////////////////////////////////////////////////////////////////////////////////////
     @Override
     public int getColumnCount() {
-        return 6;
+        return 7;
     }
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Override
     public Object getValueAt(int rowIndex, int colIndex) {
@@ -35,6 +42,10 @@ public class SymbolTableModel extends FilteredTableModel<Symbol> {
                 return symbol.getBoundingBox().getWidth();
             case 5:
                 return symbol.getBoundingBox().getHeight();
+            //federica/////////////////////////////////////////////////////////////////////////////////////////////////
+            case 6:
+                return symbol.getConfidence();
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
             default:
                 throw new IndexOutOfBoundsException("undefined row or column");
         }
@@ -55,6 +66,10 @@ public class SymbolTableModel extends FilteredTableModel<Symbol> {
                 return "Width";
             case 5:
                 return "Height";
+            //federica/////////////////////////////////////////////////////////////////////////////////////////////////
+            case 6:
+                return "Confidence";
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
             default:
                 throw new IndexOutOfBoundsException("undefined column");
         }
@@ -75,6 +90,10 @@ public class SymbolTableModel extends FilteredTableModel<Symbol> {
                 return Integer.class;
             case 5:
                 return Integer.class;
+            //federica/////////////////////////////////////////////////////////////////////////////////////////////////
+            case 6:
+                return Float.class;
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
             default:
                 throw new IndexOutOfBoundsException("undefined column");
         }

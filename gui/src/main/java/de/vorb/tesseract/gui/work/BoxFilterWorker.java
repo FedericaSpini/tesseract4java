@@ -1,5 +1,6 @@
 package de.vorb.tesseract.gui.work;
 
+import de.vorb.tesseract.gui.view.dialogs.Dialogs;
 import de.vorb.tesseract.util.Symbol;
 import de.vorb.tesseract.util.xml.BoxAdapter;
 import de.vorb.tesseract.util.Box;
@@ -69,7 +70,13 @@ public class BoxFilterWorker {
 
     //metodo che permette di eliminare il box selezionato dal boxeditor
     public void doInBackgroundDelSelectedBox(){
-        boxFile.deleteBox(boxEditor.getSelectedSymbol().get());
+        Optional<Symbol> b= boxEditor.getSelectedSymbol();
+        if(!b.isPresent()){
+            Dialogs.showWarning(controller.getView(), "No box selection",
+                    "No box has been selected. You need to select a box first.");
+            return;
+        }
+        boxFile.deleteBox(b.get());
         Optional<BoxFileModel> obf = Optional.of(boxFile);
         controller.setBoxFileModel(obf);
     }

@@ -134,7 +134,9 @@ public class SymbolOverview extends JPanel implements BoxFileModelComponent {
     @Override
     public void setPageModel(Optional<PageModel> model) {
         if (model.isPresent()) {
-            setBoxFileModel(Optional.of(model.get().toBoxFileModel()));
+            //federica
+            //setBoxFileModel(Optional.of(model.get().toBoxFileModel()));
+            setBoxFileModel(Optional.of(model.get().getBoxes()));
             pageModel = model;
         } else {
             setBoxFileModel(Optional.empty());

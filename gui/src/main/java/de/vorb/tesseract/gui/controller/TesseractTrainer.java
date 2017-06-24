@@ -167,6 +167,7 @@ public class TesseractTrainer extends JDialog {
         gbc_btnSelectTrainingDir.gridy = 1;
         contentPane.add(btnSelectTrainingDir, gbc_btnSelectTrainingDir);
 
+
         checkUseLangdata = new JCheckBox("Set unicharset properties");
         checkUseLangdata.setToolTipText("Requires 3.03+ training tools");
         GridBagConstraints gbc_chckbxUseLangdata = new GridBagConstraints();
@@ -282,16 +283,17 @@ public class TesseractTrainer extends JDialog {
 
                     // train
                     for (Path file : ds) {
+
                         final String sample = file.toString();
                         final String sampleBase = sample.replaceFirst("\\.[^.]+$", "");
 
                         if (base == null) {
+
                             final String fname = file.getFileName().toString();
                             base = file.getParent()
                                     .resolve(fname.replaceFirst("\\..+", "") + ".")
                                     .toString();
                         }
-
                         boxFiles.add(sampleBase + ".box");
                         trFiles.add(sampleBase + ".tr");
 
@@ -299,7 +301,9 @@ public class TesseractTrainer extends JDialog {
                                 .directory(trainingDir.toFile());
 
                         log.println("tesseract " + sample + " box.train:\n");
+
                         final Process train = pb.start();
+
                         err = train.getErrorStream();
 
                         while ((c = err.read()) != -1) {
@@ -326,6 +330,7 @@ public class TesseractTrainer extends JDialog {
                     pb = new ProcessBuilder(uniExtractor).directory(trainingDir.toFile());
 
                     log.println("\nunicharset_extractor:\n");
+
                     final Process unicharset = pb.start();
                     err = unicharset.getInputStream();
 
@@ -369,10 +374,15 @@ public class TesseractTrainer extends JDialog {
                     mfTraining.add("-U");
                     mfTraining.add("out.unicharset");
                     mfTraining.addAll(trFiles);
+
                     pb = new ProcessBuilder(mfTraining).directory(trainingDir.toFile());
 
+
                     log.println("\nmftraining:\n");
+
+
                     final Process mfTrain = pb.start();
+
                     err = mfTrain.getErrorStream();
 
                     while ((c = err.read()) != -1) {
@@ -382,7 +392,7 @@ public class TesseractTrainer extends JDialog {
                     if (mfTrain.waitFor() != 0) {
                         throw new Exception("Unable to do mftraining.");
                     }
-
+                    
                     // cntraining
                     final List<String> cnTrainingParams = new LinkedList<>();
                     cnTrainingParams.add(cmdDir + "cntraining");
@@ -458,7 +468,7 @@ public class TesseractTrainer extends JDialog {
         }
     }
 
-    private static class TrainingFileFilter implements
+    public static class TrainingFileFilter implements
             DirectoryStream.Filter<Path> {
         @Override
         public boolean accept(Path entry)

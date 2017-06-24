@@ -1,6 +1,7 @@
 package de.vorb.tesseract.util;
 
 import de.vorb.tesseract.util.xml.BoxAdapter;
+import javafx.geometry.BoundingBox;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlValue;
@@ -101,4 +102,6 @@ public class Symbol {
         return "Symbol(" + text + ", bounds = " + boundingBox + ", conf = "
                 + confidence + ")";
     }
+
+
 }

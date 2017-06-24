@@ -39,6 +39,7 @@ public class ThumbnailWorker extends
 
     public ThumbnailWorker(final ProjectModel project,
             DefaultListModel<PageThumbnail> pages) {
+
         this.projectModel = project;
         this.pages = pages;
     }

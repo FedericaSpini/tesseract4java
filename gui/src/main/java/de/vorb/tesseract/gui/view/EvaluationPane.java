@@ -39,10 +39,15 @@ public class EvaluationPane extends JPanel implements PageModelComponent {
     private final JTextArea textAreaTranscript;
     private final JButton btnSaveTranscription;
     private final JButton btnGenerateReport;
+    private final JButton btnConfrontTranscription;
 
     private final JButton btnZoomOut;
     private final JButton btnZoomIn;
     private final JButton btnUseOcrResult;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private final JButton btnAddInDict;
+    private final JButton btnSelInDict;
 
     /**
      * Create the panel.
@@ -86,7 +91,7 @@ public class EvaluationPane extends JPanel implements PageModelComponent {
         flowLayout.setAlignment(FlowLayout.RIGHT);
         add(panel_1, BorderLayout.SOUTH);
 
-        btnSaveTranscription = new JButton("Save");
+        btnSaveTranscription = new JButton("SaveTranscription");
         btnSaveTranscription.setEnabled(false);
         btnSaveTranscription.setToolTipText("Save Transcription");
         panel_1.add(btnSaveTranscription);
@@ -96,6 +101,7 @@ public class EvaluationPane extends JPanel implements PageModelComponent {
                 EvaluationPane.class.getResource("/icons/report.png")));
         btnGenerateReport.setEnabled(false);
         panel_1.add(btnGenerateReport);
+
 
         JPanel panel_2 = new JPanel();
         panel_2.setBorder(new EmptyBorder(0, 4, 2, 4));
@@ -173,6 +179,33 @@ public class EvaluationPane extends JPanel implements PageModelComponent {
         gbc_btnUseOcrResult.gridy = 0;
         panel_2.add(btnUseOcrResult, gbc_btnUseOcrResult);
 
+        //**************************************************************************************************************
+        btnAddInDict =new JButton("Add words in dictionary");
+        btnAddInDict.setBackground(Color.DARK_GRAY);
+        GridBagConstraints gbc_btnAddInDict = new GridBagConstraints();
+        gbc_btnAddInDict.anchor = GridBagConstraints.EAST;
+        gbc_btnAddInDict.gridx = 6;
+        gbc_btnAddInDict.gridy = 0;
+        panel_2.add(btnAddInDict, gbc_btnAddInDict);
+
+        btnSelInDict =new JButton("Add selected words in dictionary");
+        btnSelInDict.setBackground(Color.DARK_GRAY);
+        GridBagConstraints gbc_btnAddSel = new GridBagConstraints();
+        gbc_btnAddSel.anchor = GridBagConstraints.EAST;
+        gbc_btnAddSel.gridx = 5;
+        gbc_btnAddSel.gridy = 0;
+        panel_2.add(btnSelInDict, gbc_btnAddSel);
+
+        btnConfrontTranscription =new JButton("Confront Transcription");
+        btnConfrontTranscription.setBackground(Color.DARK_GRAY);
+        GridBagConstraints gbc_btnCt = new GridBagConstraints();
+        gbc_btnCt.anchor = GridBagConstraints.EAST;
+        gbc_btnCt.gridx = 7;
+        gbc_btnCt.gridy = 0;
+        panel_2.add(btnConfrontTranscription, gbc_btnCt);
+
+        //**************************************************************************************************************
+
         btnZoomIn.addActionListener(evt -> {
             if (scale.hasNext()) {
                 renderer.render(getPageModel(), scale.next());
@@ -203,6 +236,12 @@ public class EvaluationPane extends JPanel implements PageModelComponent {
         return btnUseOcrResult;
     }
 
+    //******************************************************************************************************************
+    public JButton getConfrontTranscriptionButton() {return btnConfrontTranscription;}
+    public JButton getAddInDictButton() {return btnAddInDict;}
+    public JButton getSelectedInDictButton() {return btnSelInDict;}
+    //******************************************************************************************************************
+
     public JLabel getOriginal() {
         return lblOriginal;
     }
@@ -231,7 +270,8 @@ public class EvaluationPane extends JPanel implements PageModelComponent {
     @Override
     public Optional<BoxFileModel> getBoxFileModel() {
         if (model.isPresent()) {
-            return Optional.of(model.get().toBoxFileModel());
+            //return Optional.of(model.get().toBoxFileModel());
+            return Optional.of(model.get().getBoxes());
         } else {
             return Optional.empty();
         }

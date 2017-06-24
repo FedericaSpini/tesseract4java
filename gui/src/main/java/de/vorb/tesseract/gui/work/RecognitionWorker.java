@@ -37,7 +37,6 @@ public class RecognitionWorker extends SwingWorker<PageModel, Void> {
             controller.setPageModel(Optional.empty());
             controller.getView().getProgressBar().setIndeterminate(true);
         });
-
         if (trainingFile != null) {
             producer.setTrainingFile(trainingFile);
         }
@@ -51,6 +50,7 @@ public class RecognitionWorker extends SwingWorker<PageModel, Void> {
         // Get images
         final BufferedImage image = imageModel.getPreprocessedImage();
 
+
         producer.recognize(new PageRecognitionConsumer(blocks) {
             @Override
             public boolean isCancelled() {
@@ -61,7 +61,11 @@ public class RecognitionWorker extends SwingWorker<PageModel, Void> {
         final Page page = new Page(imageModel.getPreprocessedFile(),
                 image.getWidth(), image.getHeight(), 300, blocks);
 
-        return new PageModel(imageModel, page, "");
+        //federica******************************************************************************************************
+        //return new PageModel(imageModel, page, "");
+        PageModel res= new PageModel(imageModel, page, "");
+        return res;
+        //**************************************************************************************************************
     }
 
     @Override

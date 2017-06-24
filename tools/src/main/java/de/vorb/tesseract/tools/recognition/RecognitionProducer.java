@@ -40,21 +40,48 @@ public abstract class RecognitionProducer implements Closeable {
 
     public abstract void close() throws IOException;
 
-    @SuppressWarnings("unchecked")
+    //@SuppressWarnings("unchecked")
     public void recognize(RecognitionConsumer consumer) {
         // text recognition
+        //federica******************************************************************************************************
+        //tesseract.TessBaseAPIReadConfigFile(getHandle(), "test_config2");
+
+        //System.out.println(handle.toString());
+        //tesseract.TessBaseAPIReadConfigFile(handle,"test_config2");
+        //handle.ReadConfigFile("test_config2");
+        tesseract.STRING a = new tesseract.STRING();
+        tesseract.TessBaseAPIGetVariableAsString(handle, "load_system_dawg", a);
+
+        tesseract.STRING  b = new tesseract.STRING();
+        tesseract.TessBaseAPIGetVariableAsString(handle, "save_blob_choices", b);
+
+        tesseract.STRING  c = new tesseract.STRING();
+        tesseract.TessBaseAPIGetVariableAsString(handle, "language_model_penalty_non_dict_word", c);
+
+
+
+
         tesseract.TessBaseAPIRecognize(getHandle(), null);
+        //System.out.println(handle.toString());
+        //handle.ReadConfigFile("test_config2");
+
+        //tesseract.TessBaseAPIReadConfigFile(handle,"test_config2");
+
+        //**************************************************************************************************************
 
         // get the result iterator
         final tesseract.ResultIterator resultIt =
                 tesseract.TessBaseAPIGetIterator(getHandle());
 
+
         // get the page iterator
         final tesseract.PageIterator pageIt =
                 tesseract.TessResultIteratorGetPageIterator(resultIt);
 
+
         // set the recognition state
         consumer.setState(new RecognitionState(handle, resultIt, pageIt));
+
 
         boolean inWord = false;
 

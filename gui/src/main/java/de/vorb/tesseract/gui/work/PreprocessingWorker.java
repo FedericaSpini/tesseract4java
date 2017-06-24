@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.awt.Graphics2D;
 
 public class PreprocessingWorker extends SwingWorker<ImageModel, Void> {
     private final TesseractController controller;
@@ -22,6 +23,7 @@ public class PreprocessingWorker extends SwingWorker<ImageModel, Void> {
 
     public PreprocessingWorker(TesseractController controller,
             Preprocessor preprocessor, Path sourceFile, Path destinationDir) {
+
         this.controller = controller;
         this.preprocessor = preprocessor;
         this.sourceFile = sourceFile;
@@ -35,7 +37,16 @@ public class PreprocessingWorker extends SwingWorker<ImageModel, Void> {
         final Path destFile = destinationDir.resolve(FileNames.replaceExtension(
                 sourceFile, "png").getFileName());
 
-        final BufferedImage sourceImg = ImageIO.read(sourceFile.toFile());
+        final BufferedImage readImg = ImageIO.read(sourceFile.toFile());
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        final BufferedImage sourceImg = new BufferedImage(readImg.getWidth(), readImg.getHeight(),1 );
+        Graphics2D g2d= sourceImg.createGraphics();
+        g2d.drawImage(readImg, 0, 0, null);
+        g2d.dispose();
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         final BufferedImage preprocessedImg = preprocessor.process(sourceImg);
         ImageIO.write(preprocessedImg, "PNG", destFile.toFile());

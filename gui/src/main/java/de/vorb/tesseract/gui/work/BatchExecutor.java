@@ -76,6 +76,9 @@ public class BatchExecutor {
         Files.createDirectories(project.getEvaluationDir());
         Files.createDirectories(project.getTranscriptionDir());
         Files.createDirectories(project.getOCRDir());
+        //federica
+        //Files.createDirectories(project.getBoxFileDir());
+
         Files.createDirectories(export.getDestinationDir());
 
         // holds progress count

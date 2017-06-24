@@ -11,21 +11,7 @@ import de.vorb.tesseract.util.Box;
 import de.vorb.tesseract.util.Point;
 import de.vorb.tesseract.util.Symbol;
 
-import javax.swing.DefaultListModel;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JSpinner;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -43,6 +29,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Rectangle;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
@@ -59,7 +47,7 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
     private static final long serialVersionUID = 1L;
 
     private static final Dimension DEFAULT_SPINNER_DIMENSION =
-            new Dimension(50, 20);
+            new Dimension(60, 30);
 
     private final BoxFileRenderer renderer;
 
@@ -69,6 +57,7 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
 
     private Optional<BoxFileModel> model = Optional.empty();
     private Optional<PageModel> pageModel = Optional.empty();
+
 
     private final SingleSelectionModel selectionModel =
             new SingleSelectionModel();
@@ -81,6 +70,24 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
     private final JSpinner spinnerY;
     private final JSpinner spinnerWidth;
     private final JSpinner spinnerHeight;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private final JSpinner spinnerMinConfidence;
+    private final JSpinner spinnerConfidence;
+    private final JButton btnFilter;
+    private final JButton btnDelBox;
+
+
+    private final JMenuItem jmenuSplit;
+    private final JMenuItem jmenuMergePrevious;
+    private final JMenuItem jmenuMergeNext;
+    private final JMenuItem jmenuDelBox;
+
+    private final JButton btnApplyX;
+    private final JButton btnApplyY;
+    private final JButton btnApplyWidth;
+    private final JButton btnApplyHeight;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // events
     private final List<ChangeListener> changeListeners = new ArrayList<>();
@@ -109,6 +116,11 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
                         final int y = (int) spinnerY.getValue();
                         final int width = (int) spinnerWidth.getValue();
                         final int height = (int) spinnerHeight.getValue();
+                        ////////////////////////////////////////////////////////////////////////////////////////////////
+                        final int maxConfidence = (int) spinnerMinConfidence.getValue();
+                        final float confidence = (float) spinnerConfidence.getValue();
+
+                        ////////////////////////////////////////////////////////////////////////////////////////////////
 
                         // update bounding box
                         final Box boundingBox = currentSymbol.get().getBoundingBox();
@@ -248,6 +260,25 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
                     }
                 });
 
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        JPanel panel_2 = new JPanel();
+        panel_2.setBorder(new EmptyBorder(0, 4, 4, 4));
+        panel_2.setBackground(UIManager.getColor("window"));
+        add(panel_2, BorderLayout.SOUTH);
+
+        JSplitPane splitP = new JSplitPane();
+        add(splitP, BorderLayout.CENTER);
+        GridBagLayout gbl_p = new GridBagLayout();
+        gbl_p.columnWidths = new int[]{0, 56, 15, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 36, 0, 0};
+        gbl_p.rowHeights = new int[]{0, 0};
+        gbl_p.columnWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE};
+        gbl_p.rowWeights = new double[]{0.0, Double.MIN_VALUE};
+        panel_2.setLayout(gbl_p);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         JPanel toolbar = new JPanel();
         toolbar.setBorder(new EmptyBorder(0, 4, 4, 4));
         toolbar.setBackground(UIManager.getColor("window"));
@@ -299,17 +330,24 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         toolbar.add(tfSymbol, gbc_tfSymbol);
         tfSymbol.setColumns(6);
 
-        Component hsDiv1 = javax.swing.Box.createHorizontalStrut(10);
+        /*Component hsDiv1 = javax.swing.Box.createGlue();
         GridBagConstraints gbc_hsDiv1 = new GridBagConstraints();
         gbc_hsDiv1.insets = new Insets(0, 0, 0, 5);
-        gbc_hsDiv1.gridx = 2;
+        gbc_hsDiv1.gridx = 16;
         gbc_hsDiv1.gridy = 0;
-        toolbar.add(hsDiv1, gbc_hsDiv1);
+        //toolbar.add(hsDiv1, gbc_hsDiv1);*/
+
+       /*Component hsDiv1 = javax.swing.Box.createHorizontalStrut(1000);
+        GridBagConstraints gbc_hsDiv1 = new GridBagConstraints();
+        gbc_hsDiv1.insets = new Insets(0, 0, 0, 5);
+        gbc_hsDiv1.gridx = 16;
+        gbc_hsDiv1.gridy = 0;
+        toolbar.add(hsDiv1, gbc_hsDiv1);*/
 
         JLabel lblX = new JLabel("X");
         GridBagConstraints gbc_lblX = new GridBagConstraints();
         gbc_lblX.insets = new Insets(0, 0, 0, 5);
-        gbc_lblX.gridx = 3;
+        gbc_lblX.gridx = 2;
         gbc_lblX.gridy = 0;
         toolbar.add(lblX, gbc_lblX);
 
@@ -318,10 +356,103 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         spinnerX.setPreferredSize(DEFAULT_SPINNER_DIMENSION);
         GridBagConstraints gbc_spX = new GridBagConstraints();
         gbc_spX.insets = new Insets(0, 0, 0, 5);
-        gbc_spX.gridx = 4;
+        gbc_spX.gridx = 3;
         gbc_spX.gridy = 0;
         toolbar.add(spinnerX, gbc_spX);
 
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        jmenuSplit = new JMenuItem("Split box");
+        jmenuMergeNext = new JMenuItem("Merge with next box");
+        jmenuMergePrevious = new JMenuItem("Merge with previous box");
+        jmenuDelBox = new JMenuItem("Delete box");
+        jmenuDelBox.setAccelerator(KeyStroke.getKeyStroke((char)(KeyEvent.VK_DELETE)));
+        //jmenuDelBox.setMnemonic(KeyEvent.VK_DELETE);
+
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        JLabel lblConfidence = new JLabel("Confidence");
+        GridBagConstraints gbc_lblC = new GridBagConstraints();
+        gbc_lblC.insets = new Insets(0, 0, 0, 5);
+        gbc_lblC.gridx = 14;
+        gbc_lblC.gridy = 0;
+        toolbar.add(lblConfidence, gbc_lblC);
+
+        spinnerConfidence = new JSpinner();
+        spinnerConfidence.setToolTipText("confidence");
+        spinnerConfidence.setPreferredSize(DEFAULT_SPINNER_DIMENSION);
+        GridBagConstraints gbc_spC = new GridBagConstraints();
+        gbc_spC.insets = new Insets(0, 0, 0, 5);
+        gbc_spC.gridx = 15;
+        gbc_spC.gridy = 0;
+        toolbar.add(spinnerConfidence, gbc_spC);
+
+        JLabel lblmaxConfidence = new JLabel("minConfidence");
+        GridBagConstraints gbc_lblMC = new GridBagConstraints();
+        gbc_lblMC.insets = new Insets(0, 0, 0, 5);
+        gbc_lblMC.gridx = 0;
+        gbc_lblMC.gridy = 0;
+        panel_2.add(lblmaxConfidence, gbc_lblMC);
+
+        spinnerMinConfidence = new JSpinner();
+        spinnerMinConfidence.setToolTipText("min confidence");
+        spinnerMinConfidence.setPreferredSize(DEFAULT_SPINNER_DIMENSION);
+        GridBagConstraints gbc_spMC = new GridBagConstraints();
+        gbc_spMC.insets = new Insets(0, 0, 0, 5);
+        gbc_spMC.gridx = 1;
+        gbc_spMC.gridy = 0;
+        panel_2.add(spinnerMinConfidence, gbc_spMC);
+
+        btnFilter = new JButton("Filter for Confidence");
+        btnFilter.setBackground(Color.WHITE);
+        GridBagConstraints gbc_spB = new GridBagConstraints();
+        gbc_spB.insets = new Insets(0, 0, 0, 5);
+        gbc_spB.gridx = 2;
+        gbc_spB.gridy = 0;
+        panel_2.add(btnFilter, gbc_spB);
+
+        btnDelBox = new JButton("DelBox");
+        btnDelBox.setBackground(Color.WHITE);
+        btnDelBox.setMnemonic(KeyEvent.VK_DELETE);
+        GridBagConstraints gbc_db= new GridBagConstraints();
+        gbc_db.insets = new Insets(0, 0, 0, 5);
+        gbc_db.gridx = 3;
+        gbc_spB.gridy = 0;
+        panel_2.add(btnDelBox, gbc_db);
+
+        btnApplyX = new JButton("Apply X value");
+        btnApplyX.setBackground(Color.WHITE);
+        GridBagConstraints gbc_aX = new GridBagConstraints();
+        gbc_aX.insets = new Insets(0, 0, 0, 5);
+        gbc_aX.gridx = 4;
+        gbc_aX.gridy = 0;
+        toolbar.add(btnApplyX, gbc_aX);
+
+        btnApplyY = new JButton("Apply Y value");
+        btnApplyY.setBackground(Color.WHITE);
+        GridBagConstraints gbc_aY = new GridBagConstraints();
+        gbc_aY.insets = new Insets(0, 0, 0, 5);
+        gbc_aY.gridx = 7;
+        gbc_aY.gridy = 0;
+        toolbar.add(btnApplyY, gbc_aY);
+
+        btnApplyWidth = new JButton("Apply Width value");
+        btnApplyWidth.setBackground(Color.WHITE);
+        GridBagConstraints gbc_aWidth = new GridBagConstraints();
+        gbc_aWidth.insets = new Insets(0, 0, 0, 5);
+        gbc_aWidth.gridx = 10;
+        gbc_aWidth.gridy = 0;
+        toolbar.add(btnApplyWidth, gbc_aWidth);
+
+        btnApplyHeight = new JButton("Apply Height value");
+        btnApplyHeight.setBackground(Color.WHITE);
+        GridBagConstraints gbc_aHeight = new GridBagConstraints();
+        gbc_aHeight.insets = new Insets(0, 0, 0, 5);
+        gbc_aHeight.gridx = 13;
+        gbc_aHeight.gridy = 0;
+        toolbar.add(btnApplyHeight, gbc_aHeight);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         JLabel lblY = new JLabel("Y");
         GridBagConstraints gbc_lblY = new GridBagConstraints();
         gbc_lblY.insets = new Insets(0, 0, 0, 5);
@@ -341,7 +472,7 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         JLabel lblWidth = new JLabel("W");
         GridBagConstraints gbc_lblWidth = new GridBagConstraints();
         gbc_lblWidth.insets = new Insets(0, 0, 0, 5);
-        gbc_lblWidth.gridx = 7;
+        gbc_lblWidth.gridx = 8;
         gbc_lblWidth.gridy = 0;
         toolbar.add(lblWidth, gbc_lblWidth);
 
@@ -350,14 +481,14 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         spinnerWidth.setPreferredSize(DEFAULT_SPINNER_DIMENSION);
         GridBagConstraints gbc_spWidth = new GridBagConstraints();
         gbc_spWidth.insets = new Insets(0, 0, 0, 5);
-        gbc_spWidth.gridx = 8;
+        gbc_spWidth.gridx = 9;
         gbc_spWidth.gridy = 0;
         toolbar.add(spinnerWidth, gbc_spWidth);
 
         JLabel lblHeight = new JLabel("H");
         GridBagConstraints gbc_lblHeight = new GridBagConstraints();
         gbc_lblHeight.insets = new Insets(0, 0, 0, 5);
-        gbc_lblHeight.gridx = 9;
+        gbc_lblHeight.gridx = 11;
         gbc_lblHeight.gridy = 0;
         toolbar.add(lblHeight, gbc_lblHeight);
 
@@ -366,16 +497,16 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         spinnerHeight.setPreferredSize(DEFAULT_SPINNER_DIMENSION);
         GridBagConstraints gbc_spHeight = new GridBagConstraints();
         gbc_spHeight.insets = new Insets(0, 0, 0, 5);
-        gbc_spHeight.gridx = 10;
+        gbc_spHeight.gridx = 12;
         gbc_spHeight.gridy = 0;
         toolbar.add(spinnerHeight, gbc_spHeight);
 
-        Component horizontalStrut = javax.swing.Box.createHorizontalStrut(10);
+       Component horizontalStrut = javax.swing.Box.createHorizontalStrut(10);
         GridBagConstraints gbc_horizontalStrut = new GridBagConstraints();
         gbc_horizontalStrut.insets = new Insets(0, 0, 0, 5);
-        gbc_horizontalStrut.gridx = 11;
+        gbc_horizontalStrut.gridx = 4;
         gbc_horizontalStrut.gridy = 0;
-        toolbar.add(horizontalStrut, gbc_horizontalStrut);
+        panel_2.add(horizontalStrut, gbc_horizontalStrut);
 
         final Insets btnMargin = new Insets(2, 4, 2, 4);
 
@@ -386,9 +517,9 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         btnZoomOut.setIcon(new ImageIcon(BoxEditor.class.getResource("/icons/magnifier_zoom_out.png")));
         GridBagConstraints gbc_btnZoomOut = new GridBagConstraints();
         gbc_btnZoomOut.insets = new Insets(0, 0, 0, 5);
-        gbc_btnZoomOut.gridx = 12;
+        gbc_btnZoomOut.gridx = 5;
         gbc_btnZoomOut.gridy = 0;
-        toolbar.add(btnZoomOut, gbc_btnZoomOut);
+        panel_2.add(btnZoomOut, gbc_btnZoomOut);
 
         final JButton btnZoomIn = new JButton();
         btnZoomIn.setMargin(btnMargin);
@@ -396,9 +527,9 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         btnZoomIn.setBackground(Color.WHITE);
         btnZoomIn.setIcon(new ImageIcon(BoxEditor.class.getResource("/icons/magnifier_zoom_in.png")));
         GridBagConstraints gbc_btnZoomIn = new GridBagConstraints();
-        gbc_btnZoomIn.gridx = 13;
+        gbc_btnZoomIn.gridx = 6;
         gbc_btnZoomIn.gridy = 0;
-        toolbar.add(btnZoomIn, gbc_btnZoomIn);
+        panel_2.add(btnZoomIn, gbc_btnZoomIn);
 
         btnZoomOut.addActionListener(evt -> {
             if (scale.hasPrevious()) {
@@ -437,10 +568,18 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         scrollPane.setViewportView(lblCanvas);
 
         contextMenu = new JPopupMenu("Box operations");
-        contextMenu.add(new JMenuItem("Split box"));
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /*contextMenu.add(new JMenuItem("Split box"));
         contextMenu.add(new JSeparator());
         contextMenu.add(new JMenuItem("Merge with previous box"));
-        contextMenu.add(new JMenuItem("Merge with next box"));
+        contextMenu.add(new JMenuItem("Merge with next box"));*/
+
+        contextMenu.add(jmenuSplit);
+        contextMenu.add(new JSeparator());
+        contextMenu.add(jmenuMergeNext);
+        contextMenu.add(jmenuMergePrevious);
+        contextMenu.add(jmenuDelBox);
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         lblCanvas.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
@@ -514,6 +653,9 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
             spinnerY.setValue(boundingBox.getY());
             spinnerWidth.setValue(boundingBox.getWidth());
             spinnerHeight.setValue(boundingBox.getHeight());
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            spinnerConfidence.setValue(symbol.getConfidence());
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             lblCanvas.scrollRectToVisible(boundingBox.toRectangle());
         });
@@ -522,6 +664,10 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         spinnerY.addPropertyChangeListener(spinnerListener);
         spinnerWidth.addPropertyChangeListener(spinnerListener);
         spinnerHeight.addPropertyChangeListener(spinnerListener);
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        spinnerConfidence.addPropertyChangeListener(spinnerListener);
+        spinnerMinConfidence.addPropertyChangeListener(spinnerListener);
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
 
     @Override
@@ -547,7 +693,8 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
     @Override
     public void setPageModel(Optional<PageModel> model) {
         if (model.isPresent()) {
-            setBoxFileModel(Optional.of(model.get().toBoxFileModel()));
+            //setBoxFileModel(Optional.of(model.get().toBoxFileModel()));
+            setBoxFileModel(Optional.of(model.get().getBoxes()));
             pageModel = model;
         } else {
             setBoxFileModel(Optional.empty());
@@ -634,4 +781,33 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
     public void freeResources() {
         lblCanvas.setIcon(null);
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public JButton getFilterButton(){return this.btnFilter;}
+
+    public JButton getDelBoxButton(){return this.btnDelBox;}
+
+    public JSpinner getFilterSpinner(){return this.spinnerMinConfidence;}
+
+    public JMenuItem getJmenuSplit(){return this.jmenuSplit;}
+    public JMenuItem getJmenuMergePrevious()
+    {
+        return this.jmenuMergePrevious;
+    }
+    public JMenuItem getJmenuMergeNext(){return this.jmenuMergeNext;}
+    public JMenuItem getJmenuDelBox(){return this.jmenuDelBox;}
+
+
+
+    public JButton getBtnApplyX(){return this.btnApplyX;}
+    public JButton getBtnApplyY(){return this.btnApplyY;}
+    public JButton getBtnApplyWidth(){return this.btnApplyWidth;}
+    public JButton getBtnApplyHeight(){return this.btnApplyHeight;}
+
+    /*public void setSelectedSymbol(int index){
+        tabSymbols.getTable().setRowSelectionInterval(index, index);
+        System.out.println(tabSymbols.getTable().getSelectedRow());
+
+    }*/
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }

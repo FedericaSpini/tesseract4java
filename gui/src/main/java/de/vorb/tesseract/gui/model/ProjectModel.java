@@ -13,6 +13,9 @@ public class ProjectModel {
     public static final String OCR_DIR = "tesseract-project/ocr";
     public static final String EVALUATION_DIR = "tesseract-project/evaluation";
 
+    //federica//////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public static final String BOXFILE_DIR = "tesseract-project/boxFile";
+
     private final String projectName;
 
     private final Path imageDir;
@@ -73,6 +76,11 @@ public class ProjectModel {
 
     public Path getEvaluationDir() {
         return imageDir.resolve(EVALUATION_DIR);
+    }
+
+    //federica
+    public Path getBoxFileDir(String lan) {
+        return imageDir.resolve(BOXFILE_DIR).resolve(lan);
     }
 
     public Iterable<Path> getImageFiles() throws IOException {

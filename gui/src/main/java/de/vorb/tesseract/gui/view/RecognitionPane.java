@@ -447,7 +447,10 @@ public class RecognitionPane extends JPanel implements PageModelComponent {
     @Override
     public Optional<BoxFileModel> getBoxFileModel() {
         if (model.isPresent()) {
-            return Optional.of(model.get().toBoxFileModel());
+            //federica
+            //return Optional.of(model.get().toBoxFileModel());
+            return Optional.of(model.get().getBoxes());
+
         } else {
             return Optional.empty();
         }

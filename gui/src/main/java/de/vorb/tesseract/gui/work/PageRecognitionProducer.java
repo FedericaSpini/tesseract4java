@@ -35,6 +35,7 @@ public class PageRecognitionProducer extends RecognitionProducer {
             Path tessdataDir, String trainingFile) {
         super(trainingFile);
 
+
         this.controller = controller;
         this.tessdataDir = tessdataDir;
 
@@ -47,6 +48,9 @@ public class PageRecognitionProducer extends RecognitionProducer {
         // language_model_penalty_non_dict_word
         variables.put("language_model_penalty_non_dict_word", "0.3");
 
+        variables.put("load_system_dawg", "0");
+
+        variables.put("load_freq_dawg", "0");
         // blacklist doesn't work
         // variables.put("tessedit_char_blacklist", "=§«°·»¼ÃÆØå¼½æàâèéøɔ$");
     }
@@ -73,6 +77,25 @@ public class PageRecognitionProducer extends RecognitionProducer {
         for (Entry<String, String> var : variables.entrySet()) {
             tesseract.TessBaseAPISetVariable(getHandle(), var.getKey(), var.getValue());
         }
+
+        /*System.out.println("Variables inizialized. \nReading variables...");
+
+        tesseract.STRING  b = new tesseract.STRING();
+        tesseract.TessBaseAPIGetVariableAsString(getHandle(), "save_blob_choices", b);
+        System.out.println("\tsave_blob_choices: " + b.string().getString());
+
+        tesseract.STRING  c = new tesseract.STRING();
+        tesseract.TessBaseAPIGetVariableAsString(getHandle(), "language_model_penalty_non_dict_word", c);
+        System.out.println("\tlanguage_model_penalty_non_dict_word: " + c.string().getString());
+
+        tesseract.STRING a = new tesseract.STRING();
+        tesseract.TessBaseAPIGetVariableAsString(getHandle(), "load_system_dawg", a);
+        System.out.println("\tload_system_dawg: " + a.string().getString());
+
+        tesseract.STRING d = new tesseract.STRING();
+        tesseract.TessBaseAPIGetVariableAsString(getHandle(), "load_freq_dawg", d);
+        System.out.println("\tload_freq_dawg: " + d.string().getString());*/
+
     }
 
     @Override

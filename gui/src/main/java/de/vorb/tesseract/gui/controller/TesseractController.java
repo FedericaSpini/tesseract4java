@@ -15,16 +15,7 @@ import de.vorb.tesseract.gui.model.ProjectModel;
 import de.vorb.tesseract.gui.model.SymbolListModel;
 import de.vorb.tesseract.gui.model.SymbolOrder;
 import de.vorb.tesseract.gui.util.DocumentWriter;
-import de.vorb.tesseract.gui.view.BoxFileModelComponent;
-import de.vorb.tesseract.gui.view.EvaluationPane;
-import de.vorb.tesseract.gui.view.FeatureDebugger;
-import de.vorb.tesseract.gui.view.FilteredTable;
-import de.vorb.tesseract.gui.view.ImageModelComponent;
-import de.vorb.tesseract.gui.view.MainComponent;
-import de.vorb.tesseract.gui.view.PageModelComponent;
-import de.vorb.tesseract.gui.view.PreprocessingPane;
-import de.vorb.tesseract.gui.view.SymbolOverview;
-import de.vorb.tesseract.gui.view.TesseractFrame;
+import de.vorb.tesseract.gui.view.*;
 import de.vorb.tesseract.gui.view.dialogs.BatchExportDialog;
 import de.vorb.tesseract.gui.view.dialogs.CharacterHistogram;
 import de.vorb.tesseract.gui.view.dialogs.Dialogs;
@@ -33,12 +24,7 @@ import de.vorb.tesseract.gui.view.dialogs.NewProjectDialog;
 import de.vorb.tesseract.gui.view.dialogs.PreferencesDialog;
 import de.vorb.tesseract.gui.view.dialogs.PreferencesDialog.ResultState;
 import de.vorb.tesseract.gui.view.dialogs.UnicharsetDebugger;
-import de.vorb.tesseract.gui.work.BatchExecutor;
-import de.vorb.tesseract.gui.work.PageListWorker;
-import de.vorb.tesseract.gui.work.PageRecognitionProducer;
-import de.vorb.tesseract.gui.work.PreprocessingWorker;
-import de.vorb.tesseract.gui.work.RecognitionWorker;
-import de.vorb.tesseract.gui.work.ThumbnailWorker;
+import de.vorb.tesseract.gui.work.*;
 import de.vorb.tesseract.gui.work.ThumbnailWorker.Task;
 import de.vorb.tesseract.tools.preprocessing.DefaultPreprocessor;
 import de.vorb.tesseract.tools.preprocessing.Preprocessor;
@@ -80,34 +66,14 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.*;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Observable;
-import java.util.Observer;
-import java.util.Optional;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.TreeMap;
 import java.util.prefs.Preferences;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TesseractController extends WindowAdapter implements
         ActionListener, ListSelectionListener, Observer, ChangeListener {
@@ -144,6 +110,11 @@ public class TesseractController extends WindowAdapter implements
     // constants
     private static final String KEY_TRAINING_FILE = "training_file";
     private static final String KEY_BOX_FILE = "box_file";
+
+    /* TODO make paths configurable*/
+    private static final String DICTIONARY_PATH = "/usr/share/tesseract-ocr/tessdata/";
+    private static final String EXEC_DIR="/usr/bin";
+    //******************************************************************************************************************
 
     public static final Preprocessor DEFAULT_PREPROCESSOR = new DefaultPreprocessor();
 
@@ -214,6 +185,7 @@ public class TesseractController extends WindowAdapter implements
 
             final JList<String> traineddataFilesList = view.getTraineddataFiles().getList();
 
+
             // wrap it in a filtered model
             traineddataFilesList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             traineddataFilesList.setModel(new FilteredListModel<>(traineddataFilesModel));
@@ -247,6 +219,10 @@ public class TesseractController extends WindowAdapter implements
             view.getMenuItemOpenBoxFile().addActionListener(this);
             // view.getMenuItemSaveProject().addActionListener(this);
             view.getMenuItemSaveBoxFile().addActionListener(this);
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            view.getMenuItemSaveBoxFileForTraining().addActionListener(this);
+            view.getMenuItemAutomaticTrainer().addActionListener(this);
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // view.getMenuItemSavePage().addActionListener(this);
             view.getMenuItemCloseProject().addActionListener(this);
             view.getMenuItemOpenProjectDirectory().addActionListener(this);
@@ -272,6 +248,23 @@ public class TesseractController extends WindowAdapter implements
             preprocessingPane.getPreviewButton().addActionListener(this);
             preprocessingPane.getApplyPageButton().addActionListener(this);
             preprocessingPane.getApplyAllPagesButton().addActionListener(this);
+
+            //TODO move in appropriate point ///////////////////////////////////////////////////////////////////////////
+            final BoxEditor bE= view.getBoxEditor();
+            bE.getFilterButton().addActionListener(this);
+            bE.getDelBoxButton().addActionListener(this);
+
+            bE.getJmenuMergeNext().addActionListener(this);
+            bE.getJmenuMergePrevious().addActionListener(this);
+            bE.getJmenuSplit().addActionListener(this);
+            bE.getJmenuDelBox().addActionListener(this);
+
+            bE.getBtnApplyX().addActionListener(this);
+            bE.getBtnApplyY().addActionListener(this);
+            bE.getBtnApplyWidth().addActionListener(this);
+            bE.getBtnApplyHeight().addActionListener(this);
+
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////
         }
 
         {
@@ -287,6 +280,12 @@ public class TesseractController extends WindowAdapter implements
                     .addActionListener(this);
             symbolOverview.getSymbolVariantList().getOrderingComboBox()
                     .addActionListener(this);
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            symbolOverview.getSymbolVariantList().getDeleteThis()
+                    .addActionListener(this);
+            symbolOverview.getSymbolVariantList().getBtnDeleteSelected()
+                    .addActionListener(this);
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
         }
 
         {
@@ -295,6 +294,11 @@ public class TesseractController extends WindowAdapter implements
             evalPane.getSaveTranscriptionButton().addActionListener(this);
             evalPane.getGenerateReportButton().addActionListener(this);
             evalPane.getUseOCRResultButton().addActionListener(this);
+            //**********************************************************************************************************
+            evalPane.getAddInDictButton().addActionListener(this);
+            evalPane.getSelectedInDictButton().addActionListener(this);
+            evalPane.getConfrontTranscriptionButton().addActionListener(this);
+            //**********************************************************************************************************
         }
 
         view.setVisible(true);
@@ -311,12 +315,8 @@ public class TesseractController extends WindowAdapter implements
             handleExit();
         } else if (source.equals(view.getMenuItemNewProject())) {
             handleNewProject();
-            // } else if (source.equals(view.getMenuItemOpenProject())) {
-            // handleOpenProject();
         } else if (source.equals(view.getMenuItemOpenBoxFile())) {
-            handleOpenBoxFile();
-            // } else if (source.equals(view.getMenuItemSaveProject())) {
-            // handleSaveProject();
+            handleOpenBoxFile();;
         } else if (source.equals(view.getMenuItemSaveBoxFile())) {
             handleSaveBoxFile();
         } else if (source.equals(view.getMenuItemCloseProject())) {
@@ -351,7 +351,74 @@ public class TesseractController extends WindowAdapter implements
             handleTranscriptionSave();
         } else if (source.equals(evalPane.getGenerateReportButton())) {
             handleGenerateReport();
-        } else if (source.equals(evalPane.getUseOCRResultButton())) {
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        else if (source.equals(view.getMenuItemSaveBoxFileForTraining())) {
+            handleSaveBoxFileForTraining();
+        }
+        else if (source.equals(view.getMenuItemAutomaticTrainer())) {
+            handleAutomaticTraining();
+        }
+        else if (source.equals(symbolOverview.getSymbolVariantList().getDeleteThis())) {
+            handleDeleteSymbol();
+        }
+        else if (source.equals(symbolOverview.getSymbolVariantList().getBtnDeleteSelected())) {
+            handleDeleteMultipleSymbols();
+        }
+        else if (view.getBoxEditor().getFilterButton().equals(source)){
+            handleBoxFileFilterMinCon();
+        }
+        else if (view.getBoxEditor().getBtnApplyX().equals(source)){
+            handleBoxSetX();
+        }
+        else if (view.getBoxEditor().getBtnApplyY().equals(source)){
+            handleBoxSetY();
+        }
+        else if (view.getBoxEditor().getBtnApplyWidth().equals(source)){
+            handleBoxSetWidth();
+        }
+        else if (view.getBoxEditor().getBtnApplyHeight().equals(source)){
+            handleBoxSetHeight();
+        }
+
+        else if (view.getBoxEditor().getDelBoxButton().equals(source)){
+            handleDelSingleBox();
+        }
+        else if (view.getBoxEditor().getJmenuSplit().equals(source)){
+            handleSplitBox();
+        }
+        else if (view.getBoxEditor().getJmenuMergePrevious().equals(source)){
+            handleMergeBoxWithPrevious();
+        }
+        else if (view.getBoxEditor().getJmenuMergeNext().equals(source)){
+            handleMergeBoxWithNext();
+        }
+        else if (view.getBoxEditor().getJmenuDelBox().equals(source)){
+            System.out.println("CANCELLA");
+        }
+        else if(view.getEvaluationPane().getConfrontTranscriptionButton().equals(source)){
+            try {
+                handleConfrontTranscription();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+        else if(view.getEvaluationPane().getAddInDictButton().equals(source)){
+            try {
+                handleAddInDictionary();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else if(view.getEvaluationPane().getSelectedInDictButton().equals(source)){
+            try {
+                handleAddSelectedInDict();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        else if (source.equals(evalPane.getUseOCRResultButton())) {
             handleUseOCRResult();
         } else {
             throw new UnsupportedOperationException(String.format("Unhandled ActionEvent: '%s'", evt));
@@ -747,6 +814,7 @@ public class TesseractController extends WindowAdapter implements
 
             try {
                 final Path boxFile = FileNames.replaceExtension(imageFile, "box");
+
                 final BufferedImage image = ImageIO.read(imageFile.toFile());
                 final List<Symbol> boxes = BoxFileReader.readBoxFile(boxFile, image.getHeight());
 
@@ -756,7 +824,7 @@ public class TesseractController extends WindowAdapter implements
 
                 PreferencesUtil.getPreferences().put(KEY_BOX_FILE, boxFile.toAbsolutePath().toString());
 
-                setBoxFileModel(Optional.of(new BoxFileModel(boxFile, image, boxes)));
+                setBoxFileModel(Optional.of(new BoxFileModel(boxFile, image, boxes, new ArrayList<Symbol>())));
             } catch (IOException | IndexOutOfBoundsException e) {
                 Dialogs.showError(view, "Error", "Box file could not be opened.");
             }
@@ -1105,6 +1173,412 @@ public class TesseractController extends WindowAdapter implements
         pw.execute();
     }
 
+
+    //metodo che consente di fare il training automatizzato
+    private void handleAutomaticTraining(){
+        final String traineddataFile = view.getTraineddataFiles().getList().getSelectedValue();
+        final AutomaticTrainer automaticTrainer= new AutomaticTrainer( Paths.get(EXEC_DIR),projectModel.get().getBoxFileDir(traineddataFile), null);
+        automaticTrainer.doInBackGround();
+        Path trainFile = projectModel.get().getBoxFileDir(traineddataFile).resolve(traineddataFile + ".traineddata");
+
+        String outputTrain;
+
+        Pattern pattern = Pattern.compile("^(.*)(_)(\\d+)$");
+        Matcher matcher = pattern.matcher(traineddataFile);
+        matcher.matches();
+        System.out.println("numero di gruppi:" + matcher.groupCount());
+
+        if ( !matcher.matches())
+        {
+            outputTrain = traineddataFile + "_0";
+        }
+        else
+        {
+            System.out.println(matcher.group(1));
+            System.out.println(matcher.group(2));
+            System.out.println(matcher.group(3));
+            outputTrain = matcher.group(1) + matcher.group(2) + (Integer.parseInt(matcher.group(3)) + 1);
+        }
+
+        Path tessTrain = Paths.get(DICTIONARY_PATH).resolve( outputTrain+ ".traineddata");
+        System.out.println("Il trainedata copiato è in: " + tessTrain );
+        try
+        {
+            Files.copy(trainFile, tessTrain, StandardCopyOption.REPLACE_EXISTING );
+        } catch (IOException e) {
+            e.printStackTrace();
+
+        }
+
+    }
+    //metodo che consente di salvare i box file per il prossimo training automatizzato
+    private void handleSaveBoxFileForTraining() {
+        final String traineddataFile = view.getTraineddataFiles().getList().getSelectedValue();
+
+
+        try {
+            Files.createDirectories(projectModel.get().getBoxFileDir(traineddataFile));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        final Optional<BoxFileModel> boxFileModel = getBoxFileModel();
+
+        if (boxFileModel.isPresent()) {
+            try {  //TODO make indipent from working directory
+                BoxFileWriter.writeBoxFileForTraining(boxFileModel.get(), projectModel.get().getBoxFileDir(traineddataFile), traineddataFile);
+                File a = new File("assets/.font_properties");//"tesseract4java-develop/assets/.font_properties");
+                File b = new File(projectModel.get().getBoxFileDir(traineddataFile).resolve(traineddataFile + ".font_properties").toString());
+                Files.copy(a.toPath(), b.toPath(), StandardCopyOption.REPLACE_EXISTING );
+                Dialogs.showInfo(view, "Saved", "The box file has been saved.");
+            } catch (IOException e) {
+                System.out.println(e);
+                Dialogs.showError(view, "Error", "Box file could not be written.");
+            }
+        } else {
+            Dialogs.showWarning(view, "Warning", "No box file present.");
+        }
+    }
+
+    //Metodo che permette di confrontare la trascrizione salvata con quella scritta nel riquadro dell'EvaluationPane
+    private synchronized void handleConfrontTranscription() throws FileNotFoundException {
+
+        final String transcriptionSaved = getTranscriptionSave();
+        final String newTranscription = view.getEvaluationPane().getTextAreaTranscript().getText();
+        if (transcriptionSaved.equals("")) {
+            Dialogs.showWarning(view, "Report", "The report could not be generated.");
+            return;
+        }
+        System.out.println("\n\nTranscriptionSave= "+transcriptionSaved);
+        System.out.println("\n\nnewTranscription= "+newTranscription);
+
+
+        final Path sourceFile = getPageModel().get().getImageModel().getSourceFile();
+        System.out.println("sourceFile= "+sourceFile.toString());
+
+        final Path fname = FileNames.replaceExtension(sourceFile, "txt").getFileName();
+        final Path repName = FileNames.replaceExtension(fname, "html");
+        final Path report = projectModel.get().getEvaluationDir().resolve(repName);
+        final File newTranscriptionFile= new File(String.valueOf(FileNames.replaceExtension(sourceFile,"prova.txt")));
+        final File oldTranscriptionFile= new File(String.valueOf(FileNames.replaceExtension(sourceFile,"prova2.txt")));
+
+        try(  PrintWriter out = new PrintWriter( newTranscriptionFile.getAbsolutePath().toString() )  ){
+            out.println( newTranscription );
+        }
+        try(  PrintWriter out = new PrintWriter( oldTranscriptionFile.getAbsolutePath().toString() )  ){
+            out.println( transcriptionSaved );
+        }
+
+        try {
+            final Path equivalencesFile = prepareReports();
+            System.out.println("Il path equivalencesFile= "+equivalencesFile.toString());
+
+            // generate report
+            final Batch reportBatch = new Batch(newTranscriptionFile, oldTranscriptionFile);
+            final Parameters pars = new Parameters();
+            pars.eqfile.setValue(equivalencesFile.toFile());
+            final Report rep = new Report(reportBatch, pars);
+
+            // write to file
+            DocumentWriter.writeToFile(rep.document(), report);
+
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().open(report.toFile());
+            }
+        } catch (WarningException | IOException | TransformerException e) {
+            e.printStackTrace();
+        }
+    }
+    //Metodo che permette ad handleConfrontTranscription di ottenere una copia del file con la trascrizione salvata
+    private String getTranscriptionSave() {
+        String everything="";
+        try {
+            if (projectModel.isPresent() && getPageModel().isPresent()) {
+                Files.createDirectories(
+                        projectModel.get().getTranscriptionDir());
+
+                final Path sourceFile =
+                        getPageModel().get().getImageModel().getSourceFile();
+                //System.out.println("sourceFile= "+ sourceFile.toString());
+                final Path fileName =
+                        FileNames.replaceExtension(sourceFile, "txt").getFileName();
+                //System.out.println("fileName= "+fileName.toString());
+
+                final Path transcriptionFile = projectModel.get().getTranscriptionDir().resolve(fileName);
+                //System.out.println("transcriptionFile= "+transcriptionFile.toString());
+
+                //try (final Writer writer = Files.newBufferedWriter(transcriptionFile, StandardCharsets.UTF_8)) {
+
+                    //final String transcription = view.getEvaluationPane().getTextAreaTranscript().getText();
+
+                    //writer.write(transcription);
+
+                    //return Optional.of(transcriptionFile);
+               // }
+                BufferedReader br = new BufferedReader(new FileReader(transcriptionFile.toString()));
+                try {
+                    StringBuilder sb = new StringBuilder();
+                    String line = br.readLine();
+
+                    while (line != null) {
+                        sb.append(line);
+                        sb.append(System.lineSeparator());
+                        line = br.readLine();
+                    }
+                    everything = sb.toString();
+                } finally {
+                    br.close();
+                }
+            }
+        } catch (IOException e) {
+            Dialogs.showError(view, "Exception", "Transcription could not be saved.");
+        }
+        //System.out.println("Alla fine everithing= "+everything);
+        return everything;
+    }
+
+    private synchronized void handleBoxSetX(){
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        if (boxFile.isPresent()) {
+            BoxFileModel bf= boxFile.get();
+            BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+            boxFilterWorker.doInBackgroundSetX();
+
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+
+        }
+    }
+    private synchronized void handleBoxSetY(){
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        if (boxFile.isPresent()) {
+            BoxFileModel bf= boxFile.get();
+            BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+            boxFilterWorker.doInBackgroundSetY();
+
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+
+        }
+    }
+    private synchronized void handleBoxSetWidth(){
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        if (boxFile.isPresent()) {
+            BoxFileModel bf= boxFile.get();
+            BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+            boxFilterWorker.doInBackgroundSetWidth();
+
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+
+        }
+    }
+    private synchronized void handleBoxSetHeight(){
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        if (boxFile.isPresent()) {
+            BoxFileModel bf= boxFile.get();
+            BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+            boxFilterWorker.doInBackgroundSetHeight();
+
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+
+        }
+    }
+
+    //Metodo che filtra i box in boxFile per confidence minima
+    private synchronized void handleBoxFileFilterMinCon(){
+
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        // if no box file is selected, simply ignore it
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        if (boxFile.isPresent()) {
+            BoxFileModel bf= boxFile.get();
+
+            BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+
+            //view.getProgressBar().setIndeterminate(true);
+            boxFilterWorker.doInBackgroundMinCon();
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+
+        }
+    }
+
+    private synchronized void handleSplitBox(){
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        if (boxFile.isPresent()) {
+            BoxFileModel bf= boxFile.get();
+            BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+            boxFilterWorker.doInBackgroundSplit();
+
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+
+        }
+    }
+
+    //Metodo che fonde il box selezionato con il precedente
+    private synchronized void handleMergeBoxWithPrevious(){
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        if (boxFile.isPresent()) {
+            BoxFileModel bf= boxFile.get();
+            BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+            boxFilterWorker.doInBackgroundMergeWithPrevious();
+
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+
+        }
+    }
+
+    //Metodo che fonde il box selezionato con il successivo
+    private synchronized void handleMergeBoxWithNext(){
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        if (boxFile.isPresent()) {
+            BoxFileModel bf= boxFile.get();
+            BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+            boxFilterWorker.doInBackgroundMergeWithNext();
+
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+        }
+    }
+    //Metodo che permette di eliminare un singolo box nel boxEditor
+    private synchronized void handleDelSingleBox(){
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        if (boxFile.isPresent()) {
+            BoxFileModel bf= boxFile.get();
+            BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+            boxFilterWorker.doInBackgroundDelSelectedBox();
+
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+
+        }
+    }
+
+    //Metodo che permette di eliminare un singolo box nel SymbolOverview
+    private synchronized void handleDeleteSymbol(){
+        final Symbol selected = view.getSymbolOverview().getSymbolVariantList().getList().getSelectedValue();
+        if (selected == null) {
+            return;
+        }
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        final Optional<PageModel> pm = getPageModel();
+        if (pm.isPresent()) {
+
+            BoxFileModel bf= boxFile.get();
+            BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+            boxFilterWorker.doInBackgroundDelSingleSymbol(selected);
+
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+        }}
+
+    //Metodo che permette di eliminare box multipli nel SymbolOverview
+    private synchronized void handleDeleteMultipleSymbols(){
+        final List<Symbol> selected = view.getSymbolOverview().getSymbolVariantList().getList().getSelectedValuesList();
+        System.out.println("I box da cancellare sono: "+ selected.toString());
+        if (selected == null) {
+            return;
+        }
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        final Optional<PageModel> pm = getPageModel();
+        if (pm.isPresent()) {
+            System.out.println("non sottolineare ti prego");
+            BoxFileModel bf= boxFile.get();
+            for(Symbol s: selected){
+
+            BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+            boxFilterWorker.doInBackgroundDelSingleSymbol(s);
+
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+        }}
+
+    }
+
+    //Metodo che permette di aggiungere l'intero contenuto dell'evaluation pane nel dizionario
+    private synchronized void handleAddInDictionary() throws IOException {
+
+        //System.out.println("\n\n\n Chiamato handleAddInDictionary");
+
+        Optional<String> tf=getTrainingFile();
+        String trf=tf.get();
+        final Path tessdataDir = Paths.get(DICTIONARY_PATH+ trf+".user_words");
+       // System.out.println("La directory del dizionario è: "+ DICTIONARY_PATH+ trf+".user_words");
+
+        String transcriptedText= view.getEvaluationPane().getTextAreaTranscript().getText();
+        //System.out.println("Il testo trascritto è letto correttamente ");
+
+        DictionaryWorker dc=new DictionaryWorker(this, tessdataDir, transcriptedText);
+        //System.out.println("E' creato il DictionaryWorker nel controller");
+        dc.doInBackGround();
+        //System.out.println("E' terminata la chiamata di doInbackground");
+        //System.out.println("fine");
+    }
+
+    //Metodo che permette di aggiungere solo la porzione dell'evaluation pane evidenziata nel dizionario
+    private synchronized void handleAddSelectedInDict() throws IOException {
+
+        System.out.println("\n\n\n Chiamato handleAddSelectedInDict() da tesseractController");
+
+        Optional<String> tf=getTrainingFile();
+        String trf=tf.get();
+        final Path tessdataDir = Paths.get(DICTIONARY_PATH+ trf+".user_words");
+
+        String transcriptedText= view.getEvaluationPane().getTextAreaTranscript().getSelectedText();
+        System.out.println("Il testo selezionato è: "+transcriptedText);
+
+        DictionaryWorker dc=new DictionaryWorker(this, tessdataDir, transcriptedText);
+        dc.doInBackGround();
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     private void handlePreprocessorChange(boolean allPages) {
         final Preprocessor preprocessor = view.getPreprocessingPane().getPreprocessor();
 
@@ -1278,7 +1752,9 @@ public class TesseractController extends WindowAdapter implements
             ((PageModelComponent) active).setPageModel(model);
         } else if (active instanceof BoxFileModelComponent) {
             if (model.isPresent()) {
-                ((BoxFileModelComponent) active).setBoxFileModel(Optional.of(model.get().toBoxFileModel()));
+
+                ((BoxFileModelComponent) active).setBoxFileModel(Optional.of(model.get().getBoxes()));
+                //((BoxFileModelComponent) active).setBoxFileModel(Optional.of(model.get().toBoxFileModel()));
             } else {
                 ((BoxFileModelComponent) active).setBoxFileModel(Optional.empty());
             }
@@ -1524,6 +2000,10 @@ public class TesseractController extends WindowAdapter implements
         }
 
         view.getMenuItemSaveBoxFile().setEnabled(boxFileEnabled);
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        view.getMenuItemSaveBoxFileForTraining().setEnabled(boxFileEnabled);
+        view.getMenuItemAutomaticTrainer().setEnabled(boxFileEnabled);
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // view.getMenuItemSavePage().setEnabled(projectEnabled);
         // view.getMenuItemSaveProject().setEnabled(projectEnabled);
         view.getMenuItemOpenProjectDirectory().setEnabled(projectEnabled);
