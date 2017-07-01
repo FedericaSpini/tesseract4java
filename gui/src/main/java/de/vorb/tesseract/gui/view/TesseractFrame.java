@@ -1,5 +1,6 @@
 package de.vorb.tesseract.gui.view;
 
+import de.vorb.tesseract.gui.controller.TesseractController;
 import de.vorb.tesseract.gui.model.PageThumbnail;
 import de.vorb.tesseract.gui.model.PreferencesUtil;
 import de.vorb.tesseract.gui.model.Scale;
@@ -69,8 +70,10 @@ public class TesseractFrame extends JFrame {
     private final JSeparator separator_2;
     private final JMenuItem mnCloseProject;
     private final JMenuItem mnSaveBoxFile;
-    //federica//////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private TesseractController controller;
     private final JMenuItem mnSaveBoxFileForTraining;
+    private final JMenuItem mnDeleteBoxFileForTraining;
 
 
     private final JMenuItem mnImportTranscriptions;
@@ -89,9 +92,10 @@ public class TesseractFrame extends JFrame {
     /**
      * Create the application.
      */
-    public TesseractFrame() {
+    public TesseractFrame(TesseractController controller) {
         super();
         final Toolkit t = Toolkit.getDefaultToolkit();
+        this.controller=controller;
 
         // load and set multiple icon sizes
         final List<Image> appIcons = new LinkedList<>();
@@ -109,7 +113,7 @@ public class TesseractFrame extends JFrame {
 
         scale = new Scale();
         preprocessingPane = new PreprocessingPane();
-        boxEditor = new BoxEditor(scale);
+        boxEditor = new BoxEditor(scale, controller);
         glyphOverview = new SymbolOverview();
 
         final Preferences prefs = PreferencesUtil.getPreferences();
@@ -209,12 +213,16 @@ public class TesseractFrame extends JFrame {
                 TesseractFrame.class.getResource("/icons/table_save.png")));
         mnFile.add(mnSaveBoxFile);
 
-        //federica//////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         mnSaveBoxFileForTraining = new JMenuItem("Save Box File For Training");
         mnSaveBoxFileForTraining.setEnabled(false);
         mnSaveBoxFileForTraining.setIcon(new ImageIcon(
                 TesseractFrame.class.getResource("/icons/table_save.png")));
         mnFile.add(mnSaveBoxFileForTraining);
+
+        mnDeleteBoxFileForTraining = new JMenuItem("Delete Box File For Training");
+        mnDeleteBoxFileForTraining.setEnabled(false);
+        mnFile.add(mnDeleteBoxFileForTraining);
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         mnOpenProjectDirectory = new JMenuItem("Open Project Directory");
@@ -392,6 +400,8 @@ public class TesseractFrame extends JFrame {
     //federica//////////////////////////////////////////////////////////////////////////////////////////////////////////
     public JMenuItem getMenuItemSaveBoxFileForTraining(){return mnSaveBoxFileForTraining;}
     public JMenuItem getMenuItemAutomaticTrainer(){return mnAutomaticTrainer;}
+
+    public JMenuItem getMnDeleteBoxFileForTraining(){return mnDeleteBoxFileForTraining;}
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public JMenuItem getMenuItemCloseProject() {

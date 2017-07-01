@@ -11,6 +11,8 @@ import de.vorb.tesseract.gui.view.BoxEditor;
 import de.vorb.tesseract.gui.controller.TesseractController;
 import de.vorb.tesseract.util.Block;
 
+import javax.swing.*;
+import javax.swing.event.TableModelEvent;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -110,6 +112,15 @@ public class BoxFilterWorker {
         controller.setBoxFileModel(obf);
     }
 
+    public void doInBackgroundMerge(){
+        Symbol s1 = boxEditor.getSelectedSymbol().get();
+        Symbol s2 = boxEditor.getToMerge();
+        boxFile.merge(s1, s2);
+
+        //boxFile.merge(boxEditor.getSelectedSymbol().get());
+        Optional<BoxFileModel> obf = Optional.of(boxFile);
+        controller.setBoxFileModel(obf);
+    }
     public void doInBackgroundMergeWithPrevious(){
         boxFile.mergeWithPrevious(boxEditor.getSelectedSymbol().get());
         Optional<BoxFileModel> obf = Optional.of(boxFile);

@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class BoxFileModel {
     private final Path file;
@@ -175,6 +176,17 @@ public class BoxFileModel {
         return   new Box(x, y,
                 Math.max(b1.getX()+b1.getWidth(),b2.getX()+b2.getWidth())-x,
                 Math.max(b1.getY()+b1.getHeight(),b2.getY()+b2.getHeight())-y);
+    }
+
+    public void merge(Symbol s1, Symbol s2) {
+        if(boxes.contains(s1) && boxes.contains(s2)){
+                killed.add(s1);
+                killed.add(s2);
+                boxes.add(boxes.indexOf(s1),new Symbol("", getMergedBox(s1.getBoundingBox(),s2.getBoundingBox()),100));
+                boxes.remove(s1);
+                boxes.remove(s2);
+
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

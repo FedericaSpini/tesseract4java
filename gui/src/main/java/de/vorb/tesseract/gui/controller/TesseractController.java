@@ -155,8 +155,7 @@ public class TesseractController extends WindowAdapter implements
     private Optional<RecognitionWorker> recognitionWorker = Optional.empty();
 
     public TesseractController() {
-        // create new tesseract frame
-        view = new TesseractFrame();
+        view = new TesseractFrame(this);
         featureDebugger = new FeatureDebugger(view);
 
         setApplicationMode(ApplicationMode.NONE);
@@ -222,6 +221,7 @@ public class TesseractController extends WindowAdapter implements
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////
             view.getMenuItemSaveBoxFileForTraining().addActionListener(this);
             view.getMenuItemAutomaticTrainer().addActionListener(this);
+            view.getMnDeleteBoxFileForTraining().addActionListener(this);
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // view.getMenuItemSavePage().addActionListener(this);
             view.getMenuItemCloseProject().addActionListener(this);
@@ -258,12 +258,14 @@ public class TesseractController extends WindowAdapter implements
             bE.getJmenuMergePrevious().addActionListener(this);
             bE.getJmenuSplit().addActionListener(this);
             bE.getJmenuDelBox().addActionListener(this);
+            bE.getJmenuMerge().addActionListener(this);
+            bE.getJmenuSplitClick().addActionListener(this);
 
             bE.getBtnApplyX().addActionListener(this);
             bE.getBtnApplyY().addActionListener(this);
             bE.getBtnApplyWidth().addActionListener(this);
             bE.getBtnApplyHeight().addActionListener(this);
-
+            bE.getTfMessage().addActionListener(this);
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////
         }
 
@@ -356,6 +358,9 @@ public class TesseractController extends WindowAdapter implements
         else if (source.equals(view.getMenuItemSaveBoxFileForTraining())) {
             handleSaveBoxFileForTraining();
         }
+        else if (source.equals(view.getMnDeleteBoxFileForTraining())){
+            handleDeleteBoxFileForTraining();
+        }
         else if (source.equals(view.getMenuItemAutomaticTrainer())) {
             handleAutomaticTraining();
         }
@@ -387,6 +392,12 @@ public class TesseractController extends WindowAdapter implements
         else if (view.getBoxEditor().getJmenuSplit().equals(source)){
             handleSplitBox();
         }
+        else if (view.getBoxEditor().getJmenuSplitClick().equals(source)){
+            System.out.println("CHIAMATO IL METODO PER FARE LO SPLIT COL MOUSE");
+        }
+        else if (view.getBoxEditor().getJmenuMerge().equals(source)){
+            handleMergeBox();
+        }
         else if (view.getBoxEditor().getJmenuMergePrevious().equals(source)){
             handleMergeBoxWithPrevious();
         }
@@ -394,7 +405,7 @@ public class TesseractController extends WindowAdapter implements
             handleMergeBoxWithNext();
         }
         else if (view.getBoxEditor().getJmenuDelBox().equals(source)){
-            System.out.println("CANCELLA");
+            handleDelSingleBox();
         }
         else if(view.getEvaluationPane().getConfrontTranscriptionButton().equals(source)){
             try {
@@ -1240,6 +1251,33 @@ public class TesseractController extends WindowAdapter implements
         }
     }
 
+    private void handleDeleteBoxFileForTraining() {
+       final String traineddataFile = view.getTraineddataFiles().getList().getSelectedValue();
+
+
+        try {
+            Files.createDirectories(projectModel.get().getBoxFileDir(traineddataFile));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        final Optional<BoxFileModel> boxFileModel = getBoxFileModel();
+
+        if (boxFileModel.isPresent()) {
+           try {  //TODO make indipent from working directory
+               Path p= Paths.get(projectModel.get().getBoxFileDir(traineddataFile).resolve(traineddataFile + "."+ boxFileModel.get().getFile().getFileName()).toString());
+                Files.delete(p);
+                p= FileNames.replaceExtension(p, "png");
+
+               Files.delete(p);
+            }
+            catch (IOException e) {
+            }
+        } else {
+            Dialogs.showWarning(view, "Warning", "No box file present.");
+        }
+    }
+
     //Metodo che permette di confrontare la trascrizione salvata con quella scritta nel riquadro dell'EvaluationPane
     private synchronized void handleConfrontTranscription() throws FileNotFoundException {
 
@@ -1441,6 +1479,24 @@ public class TesseractController extends WindowAdapter implements
         }
     }
 
+    private synchronized void handleMergeBox(){
+        final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
+        if (!boxFile.isPresent()) {
+            Dialogs.showWarning(view, "No box file selection",
+                    "No box file has been selected. You need to select a page first.");
+            return;
+        }
+        view.getBoxEditor().getTfMessage().setText("Please, select another box");
+        view.getBoxEditor().setToMerge(view.getBoxEditor().getSelectedSymbol().get());
+        /*if (boxFile.isPresent()) {
+            BoxFileModel bf= boxFile.get();
+           // BoxFilterWorker boxFilterWorker= new BoxFilterWorker(this, bf, view.getBoxEditor());
+           // boxFilterWorker.doInBackgroundMerge();
+
+            view.getSymbolOverview().setBoxFileModel(view.getBoxEditor().getBoxFileModel());
+
+        }*/
+    }
     //Metodo che fonde il box selezionato con il precedente
     private synchronized void handleMergeBoxWithPrevious(){
         final Optional<BoxFileModel> boxFile=view.getBoxEditor().getBoxFileModel();
@@ -2003,6 +2059,7 @@ public class TesseractController extends WindowAdapter implements
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         view.getMenuItemSaveBoxFileForTraining().setEnabled(boxFileEnabled);
         view.getMenuItemAutomaticTrainer().setEnabled(boxFileEnabled);
+        view.getMnDeleteBoxFileForTraining().setEnabled(boxFileEnabled);
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // view.getMenuItemSavePage().setEnabled(projectEnabled);
         // view.getMenuItemSaveProject().setEnabled(projectEnabled);

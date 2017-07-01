@@ -103,5 +103,12 @@ public class Symbol {
                 + confidence + ")";
     }
 
+    public boolean isTheSame(Symbol s){
+        if ((this.getText()==s.getText())&&(this.boundingBox.equals(s.boundingBox))&&this.confidence==s.getConfidence()){
+            return true;
+        }
+        return false;
+    }
+
 
 }

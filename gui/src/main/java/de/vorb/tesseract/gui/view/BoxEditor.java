@@ -1,5 +1,6 @@
 package de.vorb.tesseract.gui.view;
 
+import de.vorb.tesseract.gui.controller.TesseractController;
 import de.vorb.tesseract.gui.model.BoxFileModel;
 import de.vorb.tesseract.gui.model.PageModel;
 import de.vorb.tesseract.gui.model.Scale;
@@ -7,6 +8,7 @@ import de.vorb.tesseract.gui.model.SingleSelectionModel;
 import de.vorb.tesseract.gui.model.SymbolTableModel;
 import de.vorb.tesseract.gui.util.Filter;
 import de.vorb.tesseract.gui.view.renderer.BoxFileRenderer;
+import de.vorb.tesseract.gui.work.BoxFilterWorker;
 import de.vorb.tesseract.util.Box;
 import de.vorb.tesseract.util.Point;
 import de.vorb.tesseract.util.Symbol;
@@ -44,6 +46,8 @@ import static de.vorb.tesseract.gui.model.Scale.scaled;
 import static de.vorb.tesseract.gui.model.Scale.unscaled;
 
 public class BoxEditor extends JPanel implements BoxFileModelComponent {
+    private static TesseractController controller;
+
     private static final long serialVersionUID = 1L;
 
     private static final Dimension DEFAULT_SPINNER_DIMENSION =
@@ -82,11 +86,18 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
     private final JMenuItem jmenuMergePrevious;
     private final JMenuItem jmenuMergeNext;
     private final JMenuItem jmenuDelBox;
+    private final JMenuItem jmenuMerge;
+    private final JMenuItem jmenuSplitClick;
 
     private final JButton btnApplyX;
     private final JButton btnApplyY;
     private final JButton btnApplyWidth;
     private final JButton btnApplyHeight;
+
+    private final JTextField tfMessage;
+
+    private Symbol toMerge=null;
+    private Symbol toSplit=null;
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // events
@@ -145,7 +156,8 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
     /**
      * Create the panel.
      */
-    public BoxEditor(final Scale scale) {
+    public BoxEditor(final Scale scale, TesseractController controller) {
+        this.controller=controller;
         setLayout(new BorderLayout(0, 0));
 
         renderer = new BoxFileRenderer(this);
@@ -322,6 +334,27 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
             }
         });
 
+        tfMessage = new JTextField();
+        if(getBoxFileModel().isPresent())tfMessage.setText("Select a box");
+        else tfMessage.setText("Please, select a page");
+       /* tfMessage.addActionListener(e -> {
+            final Optional<Symbol> symbol = getSelectedSymbol();
+
+            if (!symbol.isPresent()) {
+                return;
+            }
+
+            symbol.get().setText(tfMessage.getText());
+            table.tableChanged(new TableModelEvent(table.getModel(),
+                    table.getSelectedRow()));
+
+            int newSel = table.getSelectedRow() + 1;
+            if (newSel < table.getModel().getRowCount()) {
+                table.getSelectionModel().setSelectionInterval(newSel,
+                        newSel);
+            }
+        });*/
+
         GridBagConstraints gbc_tfSymbol = new GridBagConstraints();
         gbc_tfSymbol.insets = new Insets(0, 0, 0, 5);
         gbc_tfSymbol.fill = GridBagConstraints.HORIZONTAL;
@@ -361,14 +394,15 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         toolbar.add(spinnerX, gbc_spX);
 
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        jmenuSplit = new JMenuItem("Split box");
+        jmenuSplit = new JMenuItem("Split box in the Middle");
         jmenuMergeNext = new JMenuItem("Merge with next box");
         jmenuMergePrevious = new JMenuItem("Merge with previous box");
         jmenuDelBox = new JMenuItem("Delete box");
         jmenuDelBox.setAccelerator(KeyStroke.getKeyStroke((char)(KeyEvent.VK_DELETE)));
         //jmenuDelBox.setMnemonic(KeyEvent.VK_DELETE);
 
-
+        jmenuSplitClick = new JMenuItem("Split box");
+        jmenuMerge = new JMenuItem("Merge with a selected box");
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         JLabel lblConfidence = new JLabel("Confidence");
@@ -419,6 +453,15 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         gbc_db.gridx = 3;
         gbc_spB.gridy = 0;
         panel_2.add(btnDelBox, gbc_db);
+
+        GridBagConstraints gbc_tfMessage = new GridBagConstraints();
+        gbc_tfMessage.insets = new Insets(0, 0, 0, 5);
+        gbc_tfMessage.fill = GridBagConstraints.HORIZONTAL;
+        gbc_tfMessage.gridx = 4;
+        gbc_tfMessage.gridy = 0;
+        panel_2.add(tfMessage, gbc_tfMessage);
+        tfMessage.setColumns(20);
+
 
         btnApplyX = new JButton("Apply X value");
         btnApplyX.setBackground(Color.WHITE);
@@ -504,7 +547,7 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
        Component horizontalStrut = javax.swing.Box.createHorizontalStrut(10);
         GridBagConstraints gbc_horizontalStrut = new GridBagConstraints();
         gbc_horizontalStrut.insets = new Insets(0, 0, 0, 5);
-        gbc_horizontalStrut.gridx = 4;
+        gbc_horizontalStrut.gridx = 5;
         gbc_horizontalStrut.gridy = 0;
         panel_2.add(horizontalStrut, gbc_horizontalStrut);
 
@@ -517,7 +560,7 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         btnZoomOut.setIcon(new ImageIcon(BoxEditor.class.getResource("/icons/magnifier_zoom_out.png")));
         GridBagConstraints gbc_btnZoomOut = new GridBagConstraints();
         gbc_btnZoomOut.insets = new Insets(0, 0, 0, 5);
-        gbc_btnZoomOut.gridx = 5;
+        gbc_btnZoomOut.gridx = 6;
         gbc_btnZoomOut.gridy = 0;
         panel_2.add(btnZoomOut, gbc_btnZoomOut);
 
@@ -527,7 +570,7 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         btnZoomIn.setBackground(Color.WHITE);
         btnZoomIn.setIcon(new ImageIcon(BoxEditor.class.getResource("/icons/magnifier_zoom_in.png")));
         GridBagConstraints gbc_btnZoomIn = new GridBagConstraints();
-        gbc_btnZoomIn.gridx = 6;
+        gbc_btnZoomIn.gridx = 7;
         gbc_btnZoomIn.gridy = 0;
         panel_2.add(btnZoomIn, gbc_btnZoomIn);
 
@@ -579,6 +622,8 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
         contextMenu.add(jmenuMergeNext);
         contextMenu.add(jmenuMergePrevious);
         contextMenu.add(jmenuDelBox);
+        contextMenu.add(jmenuMerge);
+        contextMenu.add(jmenuSplitClick);
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         lblCanvas.addMouseListener(new MouseAdapter() {
@@ -640,6 +685,14 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
             final String symbolText = symbol.getText();
             tfSymbol.setText(symbolText);
 
+            if (toMerge!=null&&(!(toMerge.isTheSame(getSelectedSymbol().get())))){
+                tfMessage.setText("Please, select a box");
+                BoxFilterWorker bfw= new BoxFilterWorker(controller, getBoxFileModel().get(), this);
+                bfw.doInBackgroundMerge();
+                setToMerge(null);
+
+                controller.getView().getSymbolOverview().setBoxFileModel(getBoxFileModel());
+            }
             // tooltip with codePoints
             final StringBuilder tooltip = new StringBuilder("[ ");
             for (int i = 0; i < symbolText.length(); i++) {
@@ -796,6 +849,8 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
     }
     public JMenuItem getJmenuMergeNext(){return this.jmenuMergeNext;}
     public JMenuItem getJmenuDelBox(){return this.jmenuDelBox;}
+    public JMenuItem getJmenuMerge() {return this.jmenuMerge;}
+    public JMenuItem getJmenuSplitClick(){return this.jmenuSplitClick;}
 
 
 
@@ -803,6 +858,13 @@ public class BoxEditor extends JPanel implements BoxFileModelComponent {
     public JButton getBtnApplyY(){return this.btnApplyY;}
     public JButton getBtnApplyWidth(){return this.btnApplyWidth;}
     public JButton getBtnApplyHeight(){return this.btnApplyHeight;}
+
+    public void setToMerge(Symbol toMerge){this.toMerge=toMerge;}
+    public void setToSplit(Symbol toSplit){this.toSplit=toSplit;}
+    public Symbol getToMerge(){return this.toMerge;}
+    public Symbol getToSplit(){return this.toSplit;}
+
+    public JTextField getTfMessage(){return this.tfMessage;}
 
     /*public void setSelectedSymbol(int index){
         tabSymbols.getTable().setRowSelectionInterval(index, index);
